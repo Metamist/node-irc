@@ -65,3 +65,42 @@ function runTests(t, isSecure, useSecureObject) {
         mock.close();
     });
 }
+
+test ('splitting of long lines', function(t) {
+    var port = 6667;
+    var mock = testHelpers.MockIrcd(port, 'utf-8', false);
+    var client = new irc.Client('localhost', 'testbot', {
+        secure: false,
+        selfSigned: true,
+        port: port,
+        retryCount: 0,
+        debug: true
+    });
+
+    var group = testHelpers.getFixtures('_splitLongLines');
+    t.plan(group.length);
+    group.forEach(function(item) {
+        t.deepEqual(client._splitLongLines(item.input, item.maxLength, []), item.result);
+    });
+    mock.close();
+});
+
+test ('splitting of long lines with no maxLength defined.', function(t) {
+    var port = 6667;
+    var mock = testHelpers.MockIrcd(port, 'utf-8', false);
+    var client = new irc.Client('localhost', 'testbot', {
+        secure: false,
+        selfSigned: true,
+        port: port,
+        retryCount: 0,
+        debug: true
+    });
+
+    var group = testHelpers.getFixtures('_splitLongLines_no_max');
+    console.log(group.length);
+    t.plan(group.length);
+    group.forEach(function(item) {
+        t.deepEqual(client._splitLongLines(item.input, null, []), item.result);
+    });
+    mock.close();
+});

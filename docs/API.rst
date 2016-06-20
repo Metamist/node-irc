@@ -31,6 +31,8 @@ Client
             floodProtection: false,
             floodProtectionDelay: 1000,
             sasl: false,
+            retryCount: 0,
+            retryDelay: 2000,
             stripColors: false,
             channelPrefixes: "&#",
             messageSplit: 512,
@@ -77,6 +79,9 @@ Client
         var client = new irc.Client({ autoConnect: false, ... });
         client.connect();
 
+    `retryCount` is the number of times the client will try to automatically reconnect when disconnected. It defaults to 0.
+
+    `retryDelay` is the number of milliseconds to wait before retying to automatically reconnect when disconnected. It defaults to 2000.
 
 .. js:function:: Client.send(command, arg1, arg2, ...)
 
@@ -94,7 +99,7 @@ Client
         supports multiple JOIN arguments as a space separated string (similar to
         the IRC protocol).
 
-.. js:function:: Client.part(channel, message, callback)
+.. js:function:: Client.part(channel, [message], callback)
 
     Parts the specified channel.
 
@@ -116,7 +121,7 @@ Client
 
     :param string target: is either a nickname, or a channel.
     :param string type: the type of the CTCP message. Specify "privmsg" for a
-    PRIVMSG, and anything else for a NOTICE.
+        PRIVMSG, and anything else for a NOTICE.
     :param string text: the CTCP message to send.
 
 .. js:function:: Client.action(target, message)
@@ -148,7 +153,7 @@ Client
    Responses from the server are available via the `channellist_start`,
    `channellist_item`, and `channellist` events.
 
-.. js:function:: Client.connect(retryCount, callback)
+.. js:function:: Client.connect([retryCount [, callback]])
 
    Connects to the server. Used when `autoConnect` in the options is set to
    false. If `retryCount` is a function it will be treated as the `callback`
@@ -157,16 +162,16 @@ Client
     :param integer retryCount: Optional number of times to attempt reconnection
     :param function callback: Optional callback
 
-.. js:function:: Client.disconnect(message, callback)
+.. js:function:: Client.disconnect([message [, callback]])
 
-    Disconnects from the IRC server. If `message` if a function it will be
+    Disconnects from the IRC server. If `message` is a function it will be
     treated as the `callback` (i.e. both arguments to this function are
     optional).
 
     :param string message: Optional message to send when disconnecting.
     :param function callback: Optional callback
 
-.. js:function:: Client.activateFloodProtection(interval)
+.. js:function:: Client.activateFloodProtection([interval])
 
     Activates flood protection "after the fact". You can also use
     `floodProtection` while instantiating the Client to enable flood
@@ -300,6 +305,14 @@ Events
     As per 'message' event but only emits for the subscribed channel.
     See the `raw` event for details on the `message` object.
 
+.. js:data:: 'selfMessage'
+
+    `function (to, text) { }`
+
+    Emitted when a message is sent from the client. `to` is who the message was
+    sent to. It can be either a nick (which most likely means a private message),
+    or a channel (which means a message to that channel).
+
 .. js:data:: 'notice'
 
     `function (nick, to, text, message) { }`
@@ -363,7 +376,7 @@ Events
 
     `function (channel, from, message) { }`
 
-    Emitted when the client recieves an `/invite`. See the `raw` event for details
+    Emitted when the client receives an `/invite`. See the `raw` event for details
     on the `message` object.
 
 .. js:data:: '+mode'
@@ -372,7 +385,7 @@ Events
 
     Emitted when a mode is added to a user or channel. `channel` is the channel
     which the mode is being set on/in. `by` is the user setting the mode. `mode`
-    is the single character mode indentifier. If the mode is being set on a user,
+    is the single character mode identifier. If the mode is being set on a user,
     `argument` is the nick of the user.  If the mode is being set on a channel,
     `argument` is the argument to the mode. If a channel mode doesn't have any
     arguments, `argument` will be 'undefined'. See the `raw` event for details
@@ -384,7 +397,7 @@ Events
 
     Emitted when a mode is removed from a user or channel. `channel` is the channel
     which the mode is being set on/in. `by` is the user setting the mode. `mode`
-    is the single character mode indentifier. If the mode is being set on a user,
+    is the single character mode identifier. If the mode is being set on a user,
     `argument` is the nick of the user.  If the mode is being set on a channel,
     `argument` is the argument to the mode. If a channel mode doesn't have any
     arguments, `argument` will be 'undefined'. See the `raw` event for details
@@ -462,6 +475,13 @@ Events
     Emitted when ever the server responds with an error-type message. The message
     parameter is exactly as in the 'raw' event.
 
+.. js:data:: 'action'
+
+    `function (from, to, text, message) { }`
+
+    Emitted whenever a user performs an action (e.g. `/me waves`).
+    The message parameter is exactly as in the 'raw' event.
+
 Colors
 ------
 
@@ -471,7 +491,7 @@ Colors
 
     :param string color: the name of the color as a string
     :param string text: the text you want colorized
-    :param string reset_color: the nam of the color you want set after the text (defaults to 'reset')
+    :param string reset_color: the name of the color you want set after the text (defaults to 'reset')
 
 .. js:data:: irc.colors.codes
 
@@ -510,6 +530,10 @@ Internal
 .. js:data:: Client.chans
 
     Channels joined. Includes channel modes, user list, and topic information. Only updated *after* the server recognizes the join.
+
+.. js:data:: Client.nick
+
+    The current nick of the client. Updated if the nick changes (e.g. nick collision when connecting to a server).
 
 .. js:function:: client._whoisData
 
